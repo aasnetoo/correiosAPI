@@ -11,14 +11,10 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @Entity
-public class Address {
+public class AdressStatus {
 
+    public static final int DEFAULT_ID = 1;
     @Id
-    private String zipcode;
-    private String street;
-    private String district;
-    private String city;
-    private String state;
-
-
+    private int id;
+    private Status status;
 }
