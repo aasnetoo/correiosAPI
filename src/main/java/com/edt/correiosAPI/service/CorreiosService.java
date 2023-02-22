@@ -4,7 +4,7 @@ import com.edt.correiosAPI.CorreiosApiApplication;
 import com.edt.correiosAPI.exception.NoContentException;
 import com.edt.correiosAPI.exception.NotReadyException;
 import com.edt.correiosAPI.model.Address;
-import com.edt.correiosAPI.model.AdressStatus;
+import com.edt.correiosAPI.model.AddressStatus;
 import com.edt.correiosAPI.model.Status;
 import com.edt.correiosAPI.repository.AddressRepository;
 import com.edt.correiosAPI.repository.AddressStatusRepository;
@@ -39,8 +39,8 @@ public class CorreiosService {
 
     public Status getStatus() {
 
-        return this.addressStatusRepository.findById(AdressStatus.DEFAULT_ID)
-                .orElse(AdressStatus.builder().status(Status.NEED_SETUP).build())
+        return this.addressStatusRepository.findById(AddressStatus.DEFAULT_ID)
+                .orElse(AddressStatus.builder().status(Status.NEED_SETUP).build())
                 .getStatus();
     }
 
@@ -56,34 +56,42 @@ public class CorreiosService {
     }
 
     private void saveStatus(Status status){
-        addressStatusRepository.save(AdressStatus.builder().id(AdressStatus.DEFAULT_ID).status(status).build());
+        addressStatusRepository.save(AddressStatus.builder().id(AddressStatus.DEFAULT_ID).status(status).build());
     }
 
 
     @EventListener(ApplicationStartedEvent.class)
     protected void setupOnStartup() {
-        if (setupOnStartup) {
+        try {
             this.setup();
+        }catch(Exception exc){
+            CorreiosApiApplication.close(999);
+            logger.error(".setupOnStartup - Exception", exc);
         }
+
     }
 
-    public synchronized void setup() {
-        logger.info("---" + a);
+    public void setup() throws Exception {
+        logger.info("---");
         logger.info("---");
         logger.info("--- STARTING SETUP");
         logger.info("--- Please wait... This may take a few minutes");
         logger.info("---");
         logger.info("---");
 
-        try {
-            if (this.getStatus().equals(Status.NEED_SETUP)) { // If not running, starts it.
-                this.saveStatus(Status.SETUP_RUNNING);
-                
-                this.addressRepository.saveAll(
-                        setupRepository.getFromOrigin());
 
-                this.saveStatus(Status.READY);
+        if (this.getStatus().equals(Status.NEED_SETUP)) { // If not running, starts it.
+            this.saveStatus(Status.SETUP_RUNNING);
+
+            try {
+                this.addressRepository.saveAll(setupRepository.getFromOrigin());
+            }catch(Exception exc){
+                this.saveStatus(Status.NEED_SETUP);
+                throw exc;
             }
+
+            this.saveStatus(Status.READY);
+        }
 
             logger.info("---");
             logger.info("---");
@@ -91,10 +99,6 @@ public class CorreiosService {
             logger.info("--- Good luck my friend :)");
             logger.info("---");
             logger.info("---");
-        } catch (Exception exc) {
-            logger.error("Error to download/save addresses, closing the application....", exc);
-            CorreiosApiApplication.close(999);
-        }
     }
 
 

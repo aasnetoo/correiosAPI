@@ -11,7 +11,7 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @Entity
-public class AdressStatus {
+public class AddressStatus {
 
     public static final int DEFAULT_ID = 1;
     @Id
